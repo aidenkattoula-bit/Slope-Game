@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0418" />
+  <meta name="description" content="Neon Slope - an endless 3D ball-rolling game. Race friends on the same seeded track." />
+  <title>Neon Slope</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0418'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%2339ff88'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <canvas id="gl"></canvas>
+
+  <!-- ============================ HUD ============================ -->
+  <div id="hud" class="hidden">
+    <div id="hudBadge" class="badge"></div>
+    <div id="hudScoreWrap">
+      <div id="hudScore">0</div>
+      <div id="hudBest">BEST 0</div>
+    </div>
+    <div id="hudBtns">
+      <button id="btnMute" class="icon" aria-label="Mute sound">🔊</button>
+      <button id="btnPause" class="icon" aria-label="Pause">⏸</button>
+    </div>
+  </div>
+  <div id="flash" class="hidden">NEW BEST!</div>
+
+  <!-- ========================== SCREENS ========================== -->
+  <div id="overlay">
+
+    <!-- Start / menu -->
+    <section id="menu" class="panel wide" data-tap>
+      <h1 class="logo">NEON<b>SLOPE</b></h1>
+      <button id="cta" class="cta">Press SPACE or tap to play</button>
+
+      <nav class="tabs" id="tabs">
+        <button data-tab="solo" class="on">Solo</button>
+        <button data-tab="seeded">Seeded Race</button>
+        <button data-tab="pass">Pass &amp; Play</button>
+        <button data-tab="board">Leaderboard</button>
+      </nav>
+
+      <div id="nameRow" class="field">
+        <label for="nameInput">Your name</label>
+        <input id="nameInput" maxlength="14" placeholder="Player" autocomplete="off" spellcheck="false" />
+      </div>
+
+      <div class="pane" id="pane-solo">
+        <p class="hint">Endless run on a fresh random track. Beat your best!</p>
+      </div>
+
+      <div class="pane hidden" id="pane-seeded">
+        <div class="field">
+          <label for="seedInput">Race code</label>
+          <input id="seedInput" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="FUN42" />
+        </div>
+        <div class="row">
+          <button id="seedDice" class="ghost">🎲 New code</button>
+          <button id="seedCopy" class="ghost">🔗 Copy invite link</button>
+        </div>
+        <p class="hint">Everyone who enters the same code plays the exact same course.</p>
+      </div>
+
+      <div class="pane hidden" id="pane-pass">
+        <div class="field">
+          <label>Players</label>
+          <div class="seg" id="pcount"></div>
+        </div>
+        <div id="pnames"></div>
+        <div class="field">
+          <label for="passSeed">Track code</label>
+          <input id="passSeed" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" />
+          <button id="passDice" class="ghost small" aria-label="New code">🎲</button>
+        </div>
+        <p class="hint">Everyone takes a turn on the same track. Highest score wins.</p>
+      </div>
+
+      <div class="pane hidden" id="pane-board">
+        <div class="seg" id="boardSeg">
+          <button data-b="local" class="on">This device</button>
+          <button data-b="online" id="boardOnlineBtn">Online</button>
+        </div>
+        <div id="boardList" class="board"></div>
+      </div>
+
+      <p class="controls">← → or A / D steer &nbsp;·&nbsp; touch: hold left / right half &nbsp;·&nbsp; P / Esc pause &nbsp;·&nbsp; M mute</p>
+    </section>
+
+    <!-- Pass & Play: whose turn -->
+    <section id="turn" class="panel hidden" data-tap>
+      <div class="kicker" id="turnCount">PLAYER 1 / 2</div>
+      <h2 id="turnName" class="big">PLAYER</h2>
+      <div class="kicker">TRACK <span id="turnSeed" class="mono"></span></div>
+      <button id="turnGo" class="cta">Press SPACE or tap to roll</button>
+      <button id="turnMenu" class="ghost small">Quit to menu</button>
+    </section>
+
+    <!-- Game over -->
+    <section id="gameover" class="panel hidden" data-tap>
+      <h2 class="big red">GAME OVER</h2>
+      <div id="goNewBest" class="newbest hidden">NEW BEST!</div>
+      <div class="stats">
+        <div><small>SCORE</small><b id="goScore">0</b></div>
+        <div><small>BEST</small><b id="goBest">0</b></div>
+      </div>
+      <p id="goInfo" class="hint"></p>
+      <div id="goBoard" class="board small"></div>
+      <button id="goGo" class="cta">Press SPACE to retry</button>
+      <div class="row">
+        <button id="goShare" class="ghost small hidden">🔗 Copy invite link</button>
+        <button id="goMenu" class="ghost small">Menu</button>
+      </div>
+    </section>
+
+    <!-- Pause -->
+    <section id="pause" class="panel hidden">
+      <h2 class="big">PAUSED</h2>
+      <button id="pResume" class="cta">Resume (P / Esc)</button>
+      <div class="row">
+        <button id="pMute" class="ghost small">🔊 Sound on</button>
+        <button id="pMenu" class="ghost small">Quit to menu</button>
+      </div>
+    </section>
+
+    <!-- Pass & Play results -->
+    <section id="results" class="panel wide hidden" data-tap>
+      <div id="resBanner" class="winner">WINNER</div>
+      <div id="resList" class="board"></div>
+      <p class="hint">Track <span id="resSeed" class="mono"></span></p>
+      <button id="resSame" class="cta">Rematch — same track</button>
+      <div class="row">
+        <button id="resNew" class="ghost small">Rematch — new track</button>
+        <button id="resMenu" class="ghost small">Menu</button>
+      </div>
+    </section>
+  </div>
+
+  <noscript>Neon Slope needs JavaScript.</noscript>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
